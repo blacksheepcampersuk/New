@@ -1,364 +1,743 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Complete Cupboard Configurator</title>
-  <link rel="preload" href="Twin%20Bench.glb" as="fetch" crossorigin>
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
-  
-  <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-      display: flex; flex-direction: column; align-items: center; 
-      justify-content: center; min-height: 100vh; margin: 0; background: #fbfbfb;
-      padding: 20px; box-sizing: border-box;
-    }
-    model-viewer { width: 100%; height: 55vh; background: #ffffff; border-radius: 12px; }
-    
-    .viewer-wrap { position: relative; width: 100%; max-width: 1100px; }
-    .viewer-overlay {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
-      border-radius: 12px; font-weight: 600; color: #333; z-index: 3;
-    }
+    <meta charset="utf-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    />
 
-    .view-controls {
-      position: absolute; top: 12px; right: 12px; z-index: 6;
-      display: flex; flex-direction: column; gap: 8px;
-      background: rgba(255,255,255,0.9); padding: 8px; border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-    }
-    .view-controls button {
-      padding: 6px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #ddd;
-      background: white; cursor: pointer;
-    }
-    .view-controls .row { display:flex; gap:8px; }
+    <title>Complete Cupboard Configurator</title>
 
-    .configurator-panel {
-      margin-top: 16px; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 500px;
-    }
-    .row { display: flex; gap: 10px; align-items: center; }
-    .row-title { font-weight: 600; min-width: 100px; color: #333; }
-    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    <!-- Model Viewer: CORS-friendly CDN -->
+    <script
+        type="module"
+        crossorigin
+        src="https://cdn.jsdelivr.net/npm/@google/model-viewer@1.14.1/dist/model-viewer.min.js"
+    ></script>
 
-    button { 
-      padding: 10px 16px; font-size: 14px; cursor: pointer; 
-      border-radius: 6px; border: 1px solid #ccc; background: white; transition: all 0.15s;
-    }
-    button.active { 
-      background: #0076ff; color: white; border-color: #0076ff; font-weight: bold;
-    }
+    <style>
+        /* ==============================
+           Global Styles
+        ============================== */
 
-    /* Modal styles for embedded Wix form */
-    #form-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 9999; }
-    #form-modal-card { width: 92%; max-width: 960px; height: 86%; background: #fff; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    #form-modal-close { position: absolute; right: 12px; top: 12px; z-index: 5; padding: 8px 10px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
-    #form-modal-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)); z-index: 2; }
-    #form-modal-iframe { width: 100%; height: 100%; border: 0; display: block; }
-  </style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #fbfbfb;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* ==============================
+           Tabs
+        ============================== */
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: #0076ff;
+            color: #fff;
+            border-color: #0076ff;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* ==============================
+           3D Viewer
+        ============================== */
+
+        .viewer-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        model-viewer {
+            display: block;
+            width: 100%;
+            height: 55vh;
+            background: #fff;
+            border-radius: 12px;
+        }
+
+        .viewer-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.9),
+                rgba(255, 255, 255, 0.6)
+            );
+
+            border-radius: 12px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Viewer Controls */
+
+        .view-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 6;
+
+            display: flex;
+            gap: 8px;
+
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        }
+
+        .view-controls button {
+            padding: 6px 10px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        /* ==============================
+           Configurator Panel
+        ============================== */
+
+        .configurator-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+
+            width: 100%;
+            max-width: 500px;
+            margin-top: 16px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .row-title {
+            min-width: 100px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        button.option {
+            padding: 10px 16px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        button.option.active {
+            background: #0076ff;
+            color: #fff;
+            border-color: #0076ff;
+            font-weight: 700;
+        }
+
+        /* ==============================
+           Form Modal
+        ============================== */
+
+        #form-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        #form-modal-card {
+            position: relative;
+            width: 92%;
+            max-width: 960px;
+            height: 86%;
+
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Modal Close Button */
+
+        #form-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        /* Modal Loading Spinner */
+
+        #form-modal-spinner {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.9),
+                rgba(255, 255, 255, 0.6)
+            );
+        }
+
+        /* Modal Iframe */
+
+        #form-modal-iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
 </head>
-<body>
 
-  <div class="viewer-wrap">
-    <model-viewer 
-      id="cupboard-viewer" 
-      src="Twin%20Bench.glb" 
-      camera-controls
-      style="width:100%; height:55vh; visibility:hidden; opacity:0; transition:opacity .25s; border-radius:12px;">
-    </model-viewer>
+<body>
+    <div class="container">
+
+        <!-- ==============================
+             Navigation Tabs
+        ============================== -->
+
+        <div class="tabs" role="tablist">
+            <button
+                id="tab-photo"
+                class="tab active"
+                data-target="panel-photo"
+                role="tab"
+                aria-selected="true"
+            >
+                Photo
+            </button>
+
+            <button
+                id="tab-3d"
+                class="tab"
+                data-target="panel-3d"
+                role="tab"
+                aria-selected="false"
+            >
+                3D Viewer
+            </button>
+        </div>
+<div id="panel-photo" class="tab-panel active">
+  <!-- Put your photo content here -->
+  <div style="background:#fff;padding:20px;border-radius:12px;">
+    <h2>Product Photos</h2>
+    <p>Replace this with your photo gallery or content. Click the 3D tab to view the model.</p>
+  </div>
+</div>
+
+<div id="panel-3d" class="tab-panel" aria-hidden="true">
+  <div class="viewer-wrap" style="margin-bottom:12px;">
+    <model-viewer id="cupboard-viewer" src="./models/Twin-Bench.glb" camera-controls ar ar-modes="webxr scene-viewer quick-look" style="width:100%; height:55vh; visibility:hidden; opacity:0; transition:opacity .25s; border-radius:12px;"></model-viewer>
 
     <div class="view-controls" id="view-controls">
-      <div class="row">
-        <button data-rotate="left">Rotate Left</button>
-        <button data-rotate="right">Rotate Right</button>
-      </div>
+      <button data-rotate="left" title="Rotate left">⟲</button>
+      <button data-rotate="right" title="Rotate right">⟳</button>
     </div>
 
     <div id="viewer-spinner" class="viewer-overlay">Loading model…</div>
   </div>
+</div>
 
-  <div class="configurator-panel">
-    <div class="row">
-      <span class="row-title">Model:</span>
-      <div class="btn-group">
-        <button class="size-btn" data-size="Ewe.glb">Ewe</button>
-        <button class="size-btn active" data-size="Twin%20Bench.glb">Twin-bench</button>
-        <button class="size-btn" data-size="Belted%20Ewe.glb">Belted Ewe</button>
-      </div>
-    </div>
-
-    <div class="row">
-      <span class="row-title">Doors:</span>
-      <div class="btn-group">
-        <button class="door-btn active" data-door="Green">Green</button>
-        <button class="door-btn" data-door="Blue">Blue</button>
-        <button class="door-btn" data-door="Black">Black</button>
-        <button class="door-btn" data-door="Cream">Cream</button>
-      </div>
-    </div>
-
-    <div class="row">
-      <span class="row-title">Contact:</span>
-      <div class="btn-group">
-        <button id="request-quote-btn">Request quote</button>
-      </div>
+<div class="configurator-panel">
+  <div class="row">
+    <span class="row-title">Model:</span>
+    <div class="btn-group">
+      <button class="option size-btn" data-size="./models/Ewe.glb">Ewe</button>
+      <button class="option size-btn active" data-size="./models/Twin-Bench.glb">Twin-bench</button>
+      <button class="option size-btn" data-size="./models/Belted-Ewe.glb">Belted Ewe</button>
     </div>
   </div>
 
-  <!-- Modal for embedding the Wix form -->
-  <div id="form-modal" role="dialog" aria-modal="true">
-    <div id="form-modal-card">
-      <button id="form-modal-close" aria-label="Close form">Close</button>
-      <div id="form-modal-spinner">Loading form…</div>
-      <iframe id="form-modal-iframe" src="" frameborder="0" title="Quote form"></iframe>
+  <div class="row">
+    <span class="row-title">Doors:</span>
+    <div class="btn-group">
+      <button class="option door-btn active" data-door="Green">Green</button>
+      <button class="option door-btn" data-door="Blue">Blue</button>
+      <button class="option door-btn" data-door="Black">Black</button>
+      <button class="option door-btn" data-door="Cream">Cream</button>
     </div>
   </div>
 
-  <script>
-    const modelViewer = document.querySelector("#cupboard-viewer");
-    const spinner = document.querySelector("#viewer-spinner");
-    const viewControls = document.querySelector("#view-controls");
+  <div class="row">
+    <span class="row-title">Contact:</span>
+    <div class="btn-group">
+      <button id="request-quote-btn" class="option">Request quote</button>
+    </div>
+  </div>
+</div>
 
-    let selectedModel = "Twin%20Bench.glb";
-    let selectedDoor = "Green";
+<!-- Modal for form -->
+<div id="form-modal" role="dialog" aria-modal="true">
+  <div id="form-modal-card">
+    <button id="form-modal-close" aria-label="Close form">Close</button>
+    <div id="form-modal-spinner">Loading form…</div>
+    <iframe id="form-modal-iframe" src="" frameborder="0" title="Quote form"></iframe>
+  </div>
+</div>
+        <!-- Continue with the remaining HTML here -->
 
-    const MODEL_DEFAULT_ORBIT = {
-      'Twin%20Bench.glb': '135deg 75deg auto',
-      'Ewe.glb': '315deg 75deg auto',
-      'Belted%20Ewe.glb': '315deg 75deg auto'
-    };
+<script>
+  // =========================================================
+  // 1. TAB NAVIGATION
+  // =========================================================
 
-    const ROTATION_STEP = 45;
-    const DEFAULT_ORBIT = MODEL_DEFAULT_ORBIT[selectedModel];
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
 
-    let initialLoadDone = false;
-    let userHasManualView = false;
-    let savedOrbitToRestore = null;
+  function showTabById(tabId) {
+    const selectedTab = document.getElementById(tabId);
 
-    function showViewer() {
-      spinner.style.display = "none";
-      modelViewer.style.visibility = "visible";
-      modelViewer.style.opacity = "1";
-    }
+    if (!selectedTab) return;
 
-    function showSpinnerMessage(msg) {
-      spinner.style.display = "flex";
-      spinner.textContent = msg;
-      modelViewer.style.visibility = "hidden";
-      modelViewer.style.opacity = "0";
-    }
+    const targetPanelId = selectedTab.getAttribute('data-target');
 
-    showSpinnerMessage("Loading model…");
+    tabs.forEach((tab) => {
+      tab.classList.toggle('active', tab.id === tabId);
+    });
 
-    function applyVariant(name) {
-      try {
-        if (typeof modelViewer.variantName !== "undefined") {
-          modelViewer.variantName = name;
-        }
-      } catch (err) {
-        console.warn("Error applying variant:", err);
+    panels.forEach((panel) => {
+      const isActive = panel.id === targetPanelId;
+
+      panel.classList.toggle('active', isActive);
+      panel.setAttribute('aria-hidden', String(!isActive));
+    });
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      showTabById(tab.id);
+    });
+  });
+
+  function show3dTab() {
+    showTabById('tab-3d');
+  }
+
+
+  // =========================================================
+  // 2. 3D MODEL VIEWER INITIALIZATION
+  // =========================================================
+
+  const modelViewer = document.getElementById('cupboard-viewer');
+  const spinner = document.getElementById('viewer-spinner');
+  const viewControls = document.getElementById('view-controls');
+
+  const MODEL_DEFAULT_ORBIT = {
+    './models/Twin-Bench.glb': '135deg 75deg auto',
+    './models/Ewe.glb': '315deg 75deg auto',
+    './models/Belted-Ewe.glb': '315deg 75deg auto'
+  };
+
+  const DEFAULT_MODEL = './models/Twin-Bench.glb';
+  const DEFAULT_DOOR = 'Green';
+  const ROTATION_STEP = 45;
+  const MAX_LOAD_RETRIES = 3;
+
+  let selectedModel = DEFAULT_MODEL;
+  let selectedDoor = DEFAULT_DOOR;
+
+  let initialLoadDone = false;
+  let userHasManualView = false;
+  let savedOrbitToRestore = null;
+  let retryCount = 0;
+
+
+  // =========================================================
+  // 3. VIEWER DISPLAY HELPERS
+  // =========================================================
+
+  function showViewer() {
+    spinner.style.display = 'none';
+
+    modelViewer.style.visibility = 'visible';
+    modelViewer.style.opacity = '1';
+  }
+
+  function showSpinnerMessage(message) {
+    spinner.style.display = 'flex';
+    spinner.textContent = message;
+
+    modelViewer.style.visibility = 'hidden';
+    modelViewer.style.opacity = '0';
+  }
+
+  function applyVariant(variantName) {
+    try {
+      if (typeof modelViewer.variantName !== 'undefined') {
+        modelViewer.variantName = variantName;
       }
+    } catch (error) {
+      console.warn('Unable to apply model variant:', error);
     }
+  }
 
-    function getOrbitFromString(orbitString) {
-      try {
-        const parts = orbitString.trim().split(/\s+/);
-        if (parts.length < 3) return null;
-        const match = parts[0].match(/(-?[0-9.]+)deg/);
-        return match ? parseFloat(match[1]) : null;
-      } catch (err) {
-        return null;
-      }
-    }
+  function getModelOrbit(modelFile) {
+    return (
+      MODEL_DEFAULT_ORBIT[modelFile] ||
+      MODEL_DEFAULT_ORBIT[DEFAULT_MODEL]
+    );
+  }
 
-    function rotateBy(deg) {
-      try {
-        const orbit = modelViewer.cameraOrbit || DEFAULT_ORBIT || '135deg 75deg auto';
-        const parts = orbit.trim().split(/\s+/);
-        if (parts.length < 3) return;
 
-        const azMatch = parts[0].match(/(-?[0-9.]+)deg/);
-        if (!azMatch) return;
+  // =========================================================
+  // 4. MODEL LOADING
+  // =========================================================
 
-        let azValue = parseFloat(azMatch[1]);
-        azValue = (azValue + deg) % 360;
-        if (azValue < 0) azValue += 360;
+  function setModelFile(modelFile) {
+    const defaultOrbit = getModelOrbit(modelFile);
 
-        modelViewer.cameraOrbit = `${azValue}deg ${parts[1]} ${parts[2]}`;
-        userHasManualView = true;
-        savedOrbitToRestore = modelViewer.cameraOrbit;
-      } catch (err) {
-        console.warn("rotateBy error:", err);
-      }
-    }
-
-    function setModelFile(fileName) {
-      const orbitToUse = userHasManualView && savedOrbitToRestore
+    const orbitToUse =
+      userHasManualView && savedOrbitToRestore
         ? savedOrbitToRestore
-        : (MODEL_DEFAULT_ORBIT[fileName] || DEFAULT_ORBIT || "135deg 75deg auto");
+        : defaultOrbit;
 
+    try {
+      modelViewer.cameraOrbit = orbitToUse;
+    } catch (error) {
+      console.warn('Unable to set camera orbit:', error);
+    }
+
+    // Remove and reassign the source to force a model reload.
+    modelViewer.removeAttribute('src');
+
+    setTimeout(() => {
+      modelViewer.setAttribute('src', modelFile);
+    }, 50);
+  }
+
+  modelViewer.addEventListener('load', () => {
+    if (!initialLoadDone) {
       try {
-        modelViewer.cameraOrbit = orbitToUse;
-      } catch (err) { }
+        modelViewer.cameraOrbit = getModelOrbit(selectedModel);
+      } catch (error) {
+        console.warn('Unable to set initial camera orbit:', error);
+      }
 
-      modelViewer.setAttribute("src", fileName);
+      initialLoadDone = true;
     }
 
-    modelViewer.addEventListener("load", () => {
-      if (!initialLoadDone) {
-        modelViewer.cameraOrbit = MODEL_DEFAULT_ORBIT[selectedModel] || DEFAULT_ORBIT;
-        initialLoadDone = true;
-      }
-      applyVariant(selectedDoor);
-      showViewer();
-    }, { once: true });
+    // Reset retries after a successful load.
+    retryCount = 0;
 
-    let retryCount = 0;
-    modelViewer.addEventListener("error", (ev) => {
-      console.error("model-viewer error event:", ev);
-      if (retryCount < 3) {
-        retryCount++;
-        showSpinnerMessage(`Model failed to load — retrying (${retryCount}/3)…`);
-        setTimeout(() => {
-          const src = modelViewer.getAttribute("src");
-          modelViewer.removeAttribute("src");
-          setTimeout(() => modelViewer.setAttribute("src", src), 50);
-        }, 900 * retryCount);
-      } else {
-        showSpinnerMessage("Model failed to load. Check network or upload the GLB.");
-      }
-    });
+    applyVariant(selectedDoor);
+    showViewer();
+  });
 
-    function updateConfigurator() {
-      const targetFileUrl = selectedModel;
-      const targetVariantName = `${selectedDoor}`;
-      const currentSrcAttr = modelViewer.getAttribute("src");
+  modelViewer.addEventListener('error', (event) => {
+    console.error('Model viewer error:', event);
 
-      if (currentSrcAttr !== targetFileUrl) {
-        showSpinnerMessage("Loading model…");
-        setModelFile(targetFileUrl);
+    if (retryCount >= MAX_LOAD_RETRIES) {
+      showSpinnerMessage(
+        'Model failed to load. Check your network connection or model file.'
+      );
 
-        modelViewer.addEventListener("load", () => {
-          if (userHasManualView && savedOrbitToRestore) {
-            try {
-              modelViewer.cameraOrbit = savedOrbitToRestore;
-            } catch (err) { }
-          } else {
-            try {
-              modelViewer.cameraOrbit = MODEL_DEFAULT_ORBIT[targetFileUrl] || DEFAULT_ORBIT;
-            } catch (err) { }
-          }
-
-          applyVariant(targetVariantName);
-          showViewer();
-        }, { once: true });
-      } else {
-        applyVariant(targetVariantName);
-      }
+      return;
     }
 
-    document.querySelectorAll(".size-btn").forEach(button => {
-      button.addEventListener("click", (e) => {
-        document.querySelectorAll(".size-btn").forEach(btn => btn.classList.remove("active"));
-        e.target.classList.add("active");
-        selectedModel = e.target.getAttribute("data-size");
+    retryCount++;
 
-        if (userHasManualView) {
-          try {
-            savedOrbitToRestore = modelViewer.cameraOrbit || null;
-          } catch (err) {
-            savedOrbitToRestore = null;
-          }
-        } else {
-          savedOrbitToRestore = null;
+    showSpinnerMessage(
+      `Model failed to load — retrying (${retryCount}/${MAX_LOAD_RETRIES})…`
+    );
+
+    const retryDelay = 900 * retryCount;
+
+    setTimeout(() => {
+      const currentSource = modelViewer.getAttribute('src');
+
+      modelViewer.removeAttribute('src');
+
+      setTimeout(() => {
+        if (currentSource) {
+          modelViewer.setAttribute('src', currentSource);
         }
+      }, 50);
+    }, retryDelay);
+  });
 
-        updateConfigurator();
+  // Display the initial loading message.
+  showSpinnerMessage('Loading model…');
+
+
+  // =========================================================
+  // 5. MODEL SIZE SELECTION
+  // =========================================================
+
+  const sizeButtons = document.querySelectorAll('.size-btn');
+
+  sizeButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const clickedButton = event.currentTarget;
+
+      // Update active button.
+      sizeButtons.forEach((item) => {
+        item.classList.remove('active');
       });
-    });
 
-    document.querySelectorAll(".door-btn").forEach(button => {
-      button.addEventListener("click", (e) => {
-        document.querySelectorAll(".door-btn").forEach(btn => btn.classList.remove("active"));
-        e.target.classList.add("active");
-        selectedDoor = e.target.getAttribute("data-door");
-        updateConfigurator();
-      });
-    });
+      clickedButton.classList.add('active');
 
-    viewControls.addEventListener("click", (ev) => {
-      const btn = ev.target.closest("button[data-rotate]");
-      if (!btn) return;
-      const dir = btn.getAttribute("data-rotate");
-      if (dir === "left") rotateBy(ROTATION_STEP);
-      if (dir === "right") rotateBy(-ROTATION_STEP);
-    });
+      // Store selected model.
+      selectedModel = clickedButton.getAttribute('data-size');
 
-    modelViewer.addEventListener("camera-change", () => {
+      // Preserve the user's current camera angle.
       try {
-        userHasManualView = true;
-        savedOrbitToRestore = modelViewer.cameraOrbit;
-      } catch (err) { }
+        savedOrbitToRestore = userHasManualView
+          ? modelViewer.cameraOrbit
+          : null;
+      } catch (error) {
+        savedOrbitToRestore = null;
+      }
+
+      // Switch to the 3D tab and reload the model.
+      show3dTab();
+      showSpinnerMessage('Loading model…');
+
+      retryCount = 0;
+      setModelFile(selectedModel);
     });
+  });
 
-    // Map model filename strings -> Wix form page URL (Ewe & Belted provided)
-    const WIX_FORM_URLS = {
-      'Ewe.glb': 'https://blacksheepcampers.wixforms.com/f/7516869375056413788',
-      'Twin%20Bench.glb': 'https://blacksheepcampers.wixforms.com/f/7516871135326110811',
-      'Belted%20Ewe.glb': 'https://blacksheepcampers.wixforms.com/f/7516871286258140321'
-    };
 
-    // Modal elements
-    const modal = document.getElementById('form-modal');
-    const modalIframe = document.getElementById('form-modal-iframe');
-    const modalSpinner = document.getElementById('form-modal-spinner');
-    const modalClose = document.getElementById('form-modal-close');
+  // =========================================================
+  // 6. DOOR COLOUR / VARIANT SELECTION
+  // =========================================================
 
-    async function openFormOverlay(url) {
-      modalIframe.src = '';
-      modalSpinner.style.display = 'flex';
-      modal.style.display = 'flex';
+  const doorButtons = document.querySelectorAll('.door-btn');
 
-      let didLoad = false;
-      const loadPromise = new Promise((resolve) => {
-        modalIframe.onload = () => {
-          didLoad = true;
-          modalSpinner.style.display = 'none';
-          resolve(true);
-        };
-        modalIframe.onerror = () => {
-          didLoad = false;
-          resolve(false);
-        };
+  doorButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const clickedButton = event.currentTarget;
+
+      // Update active button.
+      doorButtons.forEach((item) => {
+        item.classList.remove('active');
       });
 
-      modalIframe.src = url;
+      clickedButton.classList.add('active');
 
-      const winner = await Promise.race([
-        loadPromise,
-        new Promise((res) => setTimeout(() => res(false), 3500))
-      ]);
+      // Apply the selected model variant.
+      selectedDoor = clickedButton.getAttribute('data-door');
 
-      if (!winner || !didLoad) {
-        modal.style.display = 'none';
-        modalIframe.src = '';
-        window.open(url, '_blank');
-        alert('The form could not be embedded in this page, so it has been opened in a new tab instead.');
+      applyVariant(selectedDoor);
+    });
+  });
+
+
+  // =========================================================
+  // 7. 3D CAMERA ROTATION CONTROLS
+  // =========================================================
+
+  viewControls.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-rotate]');
+
+    if (!button) return;
+
+    const direction = button.getAttribute('data-rotate');
+
+    try {
+      const currentOrbit =
+        modelViewer.cameraOrbit ||
+        getModelOrbit(selectedModel);
+
+      const orbitParts = String(currentOrbit)
+        .trim()
+        .split(/\s+/);
+
+      const currentAzimuth =
+        parseFloat(orbitParts[0].match(/-?[0-9.]+/)?.[0]) || 0;
+
+      const rotationDirection = direction === 'left' ? 1 : -1;
+
+      let nextAzimuth =
+        (currentAzimuth + rotationDirection * ROTATION_STEP) % 360;
+
+      if (nextAzimuth < 0) {
+        nextAzimuth += 360;
       }
-    }
 
-    modalClose.addEventListener('click', () => {
+      const polarAngle = orbitParts[1] || '75deg';
+      const cameraRadius = orbitParts[2] || 'auto';
+
+      modelViewer.cameraOrbit =
+        `${nextAzimuth}deg ${polarAngle} ${cameraRadius}`;
+
+      // Remember manual camera adjustments.
+      userHasManualView = true;
+      savedOrbitToRestore = modelViewer.cameraOrbit;
+
+    } catch (error) {
+      console.warn('Unable to rotate model:', error);
+    }
+  });
+
+
+  // =========================================================
+  // 8. WIX QUOTE FORM URLS
+  // =========================================================
+
+  const WIX_FORM_URLS = {
+    './models/Ewe.glb':
+      'https://blacksheepcampers.wixforms.com/f/7516869375056413788',
+
+    './models/Twin-Bench.glb':
+      'https://blacksheepcampers.wixforms.com/f/7516871135326110811',
+
+    './models/Belted-Ewe.glb':
+      'https://blacksheepcampers.wixforms.com/f/7516871286258140321'
+  };
+
+
+  // =========================================================
+  // 9. QUOTE FORM MODAL ELEMENTS
+  // =========================================================
+
+  const modal = document.getElementById('form-modal');
+  const modalIframe = document.getElementById('form-modal-iframe');
+  const modalSpinner = document.getElementById('form-modal-spinner');
+  const modalClose = document.getElementById('form-modal-close');
+
+  const quoteButton = document.getElementById('request-quote-btn');
+
+
+  // =========================================================
+  // 10. OPEN WIX FORM
+  // =========================================================
+
+  async function openFormOverlay(url) {
+    modalIframe.src = '';
+    modalSpinner.style.display = 'flex';
+    modal.style.display = 'flex';
+
+    let didLoad = false;
+
+    const loadPromise = new Promise((resolve) => {
+      modalIframe.onload = () => {
+        didLoad = true;
+        modalSpinner.style.display = 'none';
+
+        resolve(true);
+      };
+
+      modalIframe.onerror = () => {
+        didLoad = false;
+
+        resolve(false);
+      };
+    });
+
+    modalIframe.src = url;
+
+    // Wait for the iframe or the timeout, whichever comes first.
+    const didLoadInTime = await Promise.race([
+      loadPromise,
+      new Promise((resolve) => {
+        setTimeout(() => resolve(false), 3500);
+      })
+    ]);
+
+    if (!didLoadInTime || !didLoad) {
       modal.style.display = 'none';
       modalIframe.src = '';
-    });
 
-    document.getElementById('request-quote-btn').addEventListener('click', () => {
-      const modelKey = selectedModel || '';
-      const target = WIX_FORM_URLS[modelKey] || WIX_FORM_URLS['Twin%20Bench.glb'];
-      openFormOverlay(target);
-    });
-  </script>
+      window.open(url, '_blank');
 
+      alert(
+        'The form could not be embedded in this page, ' +
+        'so it has been opened in a new tab instead.'
+      );
+    }
+  }
+
+
+  // =========================================================
+  // 11. CLOSE WIX FORM MODAL
+  // =========================================================
+
+  modalClose.addEventListener('click', () => {
+    modal.style.display = 'none';
+    modalIframe.src = '';
+  });
+
+
+  // =========================================================
+  // 12. REQUEST A QUOTE
+  // =========================================================
+
+  quoteButton.addEventListener('click', () => {
+    const modelKey = selectedModel || DEFAULT_MODEL;
+
+    const formUrl =
+      WIX_FORM_URLS[modelKey] ||
+      WIX_FORM_URLS[DEFAULT_MODEL];
+
+    openFormOverlay(formUrl);
+  });
+
+</script>
 </body>
 </html>
